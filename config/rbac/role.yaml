@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - aws.operators.jittakal.io
+  resources:
+  - lambdaconcurrencyscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aws.operators.jittakal.io
+  resources:
+  - lambdaconcurrencyscalers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - aws.operators.jittakal.io
+  resources:
+  - lambdaconcurrencyscalers/status
+  verbs:
+  - get
+  - patch
+  - update

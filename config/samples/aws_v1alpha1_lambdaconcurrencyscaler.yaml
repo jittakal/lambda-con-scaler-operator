@@ -1,0 +1,17 @@
+apiVersion: aws.operators.jittakal.io/v1alpha1
+kind: LambdaConcurrencyScaler
+metadata:
+  labels:
+    app.kubernetes.io/name: lambdaconcurrencyscaler
+    app.kubernetes.io/instance: lambdaconcurrencyscaler-sample
+    app.kubernetes.io/part-of: lambda-con-scaler-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: lambda-con-scaler-operator
+  name: lambdaconcurrencyscaler-sample
+spec:
+  awsSQSName: sqsName
+  awsSQSMsgCountThreshold: 1000
+  awsLambdaName: lambdaFunctionName
+  awsLambdaMinConcurrency: 50
+  awsLamndaMaxConcurrency: 100
+  awsLambdaStepConcurrency: 5

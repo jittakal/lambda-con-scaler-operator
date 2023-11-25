@@ -1,0 +1,31 @@
+# permissions for end users to edit lambdaconcurrencyscalers.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: lambdaconcurrencyscaler-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: lambda-con-scaler-operator
+    app.kubernetes.io/part-of: lambda-con-scaler-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: lambdaconcurrencyscaler-editor-role
+rules:
+- apiGroups:
+  - aws.operators.jittakal.io
+  resources:
+  - lambdaconcurrencyscalers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - aws.operators.jittakal.io
+  resources:
+  - lambdaconcurrencyscalers/status
+  verbs:
+  - get
