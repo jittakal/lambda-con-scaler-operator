@@ -1,4 +1,4 @@
-VERSION ?= 0.0.1
+VERSION ?= 0.0.1-metrics
 IMAGE_TAG_BASE ?= docker.io/jittakal/lambda-con-scaler-operator
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 

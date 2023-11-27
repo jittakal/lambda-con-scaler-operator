@@ -27,8 +27,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
+
 	awsv1alpha1 "github.com/jittakal/lambda-con-scaler-operator/api/v1alpha1"
 )
+
+var (
+	lambdaConcurrencyConfig = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "lambda_concurrency_config",
+			Help: "Current Lambda concurrency configuration",
+		},
+		[]string{"namespace", "controller", "lambda_name", "sqs_name"},
+	)
+)
+
+func init() {
+	// Register custom metrics with the global prometheus registry
+	metrics.Registry.MustRegister(lambdaConcurrencyConfig)
+}
 
 const (
 	lambdaNotExistsError              = "%s lambda does not exists"
@@ -118,6 +136,9 @@ func (r *LambdaConcurrencyScalerReconciler) Reconcile(ctx context.Context, req c
 		lambdaConcurrencyScaler.Status.State = awsv1alpha1.ADJUSTED_STATE
 		lambdaConcurrencyScaler.Status.AdjustedTimestamp = metav1.Now()
 		lambdaConcurrencyScaler.Status.Concurrency = newConcurrency
+
+		lambdaConcurrencyConfig.WithLabelValues(req.NamespacedName.Name, lambdaConcurrencyScaler.Name,
+			lambdaConcurrencyScaler.Spec.AWSLambdaName, lambdaConcurrencyScaler.Spec.AWSSQSName).Set(float64(newConcurrency))
 
 		r.Status().Update(ctx, lambdaConcurrencyScaler)
 	}
