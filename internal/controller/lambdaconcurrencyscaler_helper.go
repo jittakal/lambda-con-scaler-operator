@@ -166,11 +166,11 @@ func (c *AwsSvcClient) AdjustLambdaConcurrency(ctx context.Context, lambdaName, 
 	newConcurrency := calculateNewConcurrency(currentConcurrency, avgVisibility, threshold, minConcurrency, maxConcurrency, step)
 
 	// Update the Lambda concurrency
-	//err = c.updateLambdaConcurrency(ctx, lambdaName, newConcurrency)
-	//if err != nil {
-	//	log.Error(err, "error on updating concurrency of lambda function")
-	//	return fmt.Errorf("error updating Lambda concurrency: %v", err)
-	//}
+	err = c.updateLambdaConcurrency(ctx, lambdaName, newConcurrency)
+	if err != nil {
+		log.Error(err, "error on updating concurrency of lambda function")
+		return currentConcurrency, fmt.Errorf("error updating lambda concurrency: %v", err)
+	}
 
 	log.Info("lambda function concurrency adjusted", "OldConcurrency", currentConcurrency, "NewConcurrency", newConcurrency)
 	return newConcurrency, nil
