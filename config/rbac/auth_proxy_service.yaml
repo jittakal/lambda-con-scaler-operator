@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/created-by: lambda-con-scaler-operator
     app.kubernetes.io/part-of: lambda-con-scaler-operator
     app.kubernetes.io/managed-by: kustomize
+    release: kube-prom-stack
   name: controller-manager-metrics-service
   namespace: system
 spec:

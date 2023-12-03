@@ -40,7 +40,7 @@ $ cd lambda-con-scaler-operator
 Create namesapce
 
 ```bash
-$ kubectl create namespace lambda-conc-scaler-operator-system
+$ kubectl create namespace lambda-con-scaler-operator-system
 ```
 
 Create `lambdaconcurrencyscaler-secret` use sample yaml with base64 encoded AWS secrets have only permission to read SQS queue metrics and read / write permissions for AWS Lambda function

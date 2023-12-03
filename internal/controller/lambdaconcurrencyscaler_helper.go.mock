@@ -1,0 +1,84 @@
+package controller
+
+import (
+	"context"
+	"math"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+const visibilityMetricName = "ApproximateNumberOfMessagesVisible"
+
+type AwsSvcClient struct {
+	LambdaClient *lambda.Client
+	SQSClient    *sqs.Client
+	CWClient     *cloudwatch.Client
+}
+
+func NewAwsSvcClient() (*AwsSvcClient, error) {
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	lambdaClient := lambda.NewFromConfig(cfg)
+	sqsClient := sqs.NewFromConfig(cfg)
+	cwClient := cloudwatch.NewFromConfig(cfg)
+
+	return &AwsSvcClient{
+		LambdaClient: lambdaClient,
+		SQSClient:    sqsClient,
+		CWClient:     cwClient,
+	}, nil
+}
+
+func (c *AwsSvcClient) LambdaExists(ctx context.Context, lambdaName string) bool {
+	return true
+}
+
+func (c *AwsSvcClient) LambdaConcurrency(ctx context.Context, lambdaName string) (int32, error) {
+	return 10, nil
+}
+
+func (c *AwsSvcClient) SQSTriggerForLambdaExists(ctx context.Context, lambdaName, sqsName string) bool {
+	return true
+}
+
+func (c *AwsSvcClient) getVisibilityMetrics(ctx context.Context, sqsName string) (float64, error) {
+	_ = log.FromContext(ctx)
+
+	return 10.0, nil
+}
+
+func (c *AwsSvcClient) AdjustLambdaConcurrency(ctx context.Context, lambdaName, sqsName string, threshold, minConcurrency, maxConcurrency, step int32) (int32, float64, error) {
+	log := log.FromContext(ctx)
+
+	log.Info("lambda function concurrency adjusted", "OldConcurrency", 10, "NewConcurrency", 10)
+	return 10, 1000, nil
+}
+
+func calculateNewConcurrency(currentConcurrency int32, avgVisibility float64, threshold, minConcurrency, maxConcurrency, step int32) int32 {
+	// Calculate the new Lambda concurrency based on the visibility metrics
+	if avgVisibility > float64(threshold) {
+		newConcurrency := currentConcurrency + int32(step)
+		return int32(math.Min(float64(newConcurrency), float64(maxConcurrency)))
+	} else {
+		newConcurrency := currentConcurrency - int32(step)
+		return int32(math.Max(float64(newConcurrency), float64(minConcurrency)))
+	}
+}
+
+func (c *AwsSvcClient) updateLambdaConcurrency(ctx context.Context, lambdaName string, newConcurrency int32) error {
+	// Update the Lambda concurrency
+	_, err := c.LambdaClient.PutFunctionConcurrency(ctx, &lambda.PutFunctionConcurrencyInput{
+		FunctionName:                 &lambdaName,
+		ReservedConcurrentExecutions: aws.Int32(newConcurrency),
+	})
+	return err
+}

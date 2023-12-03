@@ -10,6 +10,7 @@ metadata:
     app.kubernetes.io/created-by: lambda-con-scaler-operator
     app.kubernetes.io/part-of: lambda-con-scaler-operator
     app.kubernetes.io/managed-by: kustomize
+    release: kube-prom-stack
   name: controller-manager-metrics-monitor
   namespace: system
 spec:
@@ -20,6 +21,10 @@ spec:
       bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
       tlsConfig:
         insecureSkipVerify: true
+  namespaceSelector:
+    matchNames:
+      - lambda-con-scaler-operator-system
   selector:
     matchLabels:
       control-plane: controller-manager
+      release: kube-prom-stack

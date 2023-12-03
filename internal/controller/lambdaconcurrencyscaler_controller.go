@@ -41,11 +41,19 @@ var (
 		},
 		[]string{"namespace", "controller", "lambda_name", "sqs_name"},
 	)
+
+	sqsAvgVisibleMessages = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "sqs_avg_visible_messages",
+			Help: "SQS average approximate number of messages visible",
+		},
+		[]string{"namespace", "controller", "sqs_name"},
+	)
 )
 
 func init() {
 	// Register custom metrics with the global prometheus registry
-	metrics.Registry.MustRegister(lambdaConcurrencyConfig)
+	metrics.Registry.MustRegister(lambdaConcurrencyConfig, sqsAvgVisibleMessages)
 }
 
 const (
@@ -119,7 +127,7 @@ func (r *LambdaConcurrencyScalerReconciler) Reconcile(ctx context.Context, req c
 		r.Status().Update(ctx, lambdaConcurrencyScaler)
 
 		// Adjust lambda function reserved concurrency execution configurations
-		newConcurrency, err := r.AwsSvcClient.AdjustLambdaConcurrency(ctx, lambdaConcurrencyScaler.Spec.AWSLambdaName,
+		newConcurrency, avgVisibleMessages, err := r.AwsSvcClient.AdjustLambdaConcurrency(ctx, lambdaConcurrencyScaler.Spec.AWSLambdaName,
 			lambdaConcurrencyScaler.Spec.AWSSQSName, lambdaConcurrencyScaler.Spec.AWSSQSMsgCountThreshold,
 			lambdaConcurrencyScaler.Spec.AWSLambdaMinConcurrency, lambdaConcurrencyScaler.Spec.AWSLambdaMaxConcurrency,
 			lambdaConcurrencyScaler.Spec.AWSLambdaStepConcurrency)
@@ -137,8 +145,13 @@ func (r *LambdaConcurrencyScalerReconciler) Reconcile(ctx context.Context, req c
 		lambdaConcurrencyScaler.Status.AdjustedTimestamp = metav1.Now()
 		lambdaConcurrencyScaler.Status.Concurrency = newConcurrency
 
+		// Set value to custom metric lambda_concurrency_config
 		lambdaConcurrencyConfig.WithLabelValues(req.NamespacedName.Name, lambdaConcurrencyScaler.Name,
 			lambdaConcurrencyScaler.Spec.AWSLambdaName, lambdaConcurrencyScaler.Spec.AWSSQSName).Set(float64(newConcurrency))
+
+		// Set value to custom metric lambda_concurrency_config
+		sqsAvgVisibleMessages.WithLabelValues(req.NamespacedName.Name, lambdaConcurrencyScaler.Name,
+			lambdaConcurrencyScaler.Spec.AWSSQSName).Set(float64(avgVisibleMessages))
 
 		r.Status().Update(ctx, lambdaConcurrencyScaler)
 	}

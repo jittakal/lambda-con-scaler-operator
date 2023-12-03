@@ -146,34 +146,34 @@ func (c *AwsSvcClient) getVisibilityMetrics(ctx context.Context, sqsName string)
 	return avgVisibility, nil
 }
 
-func (c *AwsSvcClient) AdjustLambdaConcurrency(ctx context.Context, lambdaName, sqsName string, threshold, minConcurrency, maxConcurrency, step int32) (int32, error) {
+func (c *AwsSvcClient) AdjustLambdaConcurrency(ctx context.Context, lambdaName, sqsName string, threshold, minConcurrency, maxConcurrency, step int32) (int32, float64, error) {
 	log := log.FromContext(ctx)
 
 	// Get the SQS visibility metrics
 	avgVisibility, err := c.getVisibilityMetrics(ctx, sqsName)
 	if err != nil {
 		log.Error(err, "reteriving sqs message vistibility detail failed")
-		return -1, fmt.Errorf("error getting visibility metrics: %v", err)
+		return -1, avgVisibility, fmt.Errorf("error getting visibility metrics: %v", err)
 	}
 
 	currentConcurrency, err := c.LambdaConcurrency(ctx, lambdaName)
 	if err != nil {
 		log.Error(err, "error while reteriving lambda function concurrency")
-		return -1, fmt.Errorf("error while reteriving lambda function concurrency: %v", err)
+		return -1, avgVisibility, fmt.Errorf("error while reteriving lambda function concurrency: %v", err)
 	}
 
 	// Determine the new Lambda concurrency based on the visibility metrics
 	newConcurrency := calculateNewConcurrency(currentConcurrency, avgVisibility, threshold, minConcurrency, maxConcurrency, step)
 
 	// Update the Lambda concurrency
-	//err = c.updateLambdaConcurrency(ctx, lambdaName, newConcurrency)
-	//if err != nil {
-	//	log.Error(err, "error on updating concurrency of lambda function")
-	//	return fmt.Errorf("error updating Lambda concurrency: %v", err)
-	//}
+	err = c.updateLambdaConcurrency(ctx, lambdaName, newConcurrency)
+	if err != nil {
+		log.Error(err, "error on updating concurrency of lambda function")
+		return currentConcurrency, avgVisibility, fmt.Errorf("error updating Lambda concurrency: %v", err)
+	}
 
 	log.Info("lambda function concurrency adjusted", "OldConcurrency", currentConcurrency, "NewConcurrency", newConcurrency)
-	return newConcurrency, nil
+	return newConcurrency, avgVisibility, nil
 }
 
 func calculateNewConcurrency(currentConcurrency int32, avgVisibility float64, threshold, minConcurrency, maxConcurrency, step int32) int32 {
